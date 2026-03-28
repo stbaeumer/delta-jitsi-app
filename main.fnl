@@ -56,7 +56,10 @@
   (= (trim-string (input-value id)) ""))
 
 (fn selected-server-id []
-  (or state.server-id default-server-id))
+  (let [from-dom (trim-string (input-value :server))]
+    (if (not= from-dom "")
+        from-dom
+        (or state.server-id default-server-id))))
 
 (fn find-server-option [server-id]
   (var found nil)
@@ -89,10 +92,9 @@
 
 (fn strip-room-placeholder [template]
   (let [t (trim-string template)]
-    (trim-string
-      (string.gsub
-        (string.gsub t "/%$ROOM" "")
-        "%$ROOM" ""))))
+    (let [no-slash (string.gsub t "/%$ROOM" "")
+          no-tag   (string.gsub no-slash "%$ROOM" "")]
+      (trim-string no-tag))))
 
 (fn join-base-and-room [base room]
   (let [clean-base (trim-string base)]
@@ -108,8 +110,9 @@
     (if (or (= room "") (= template ""))
         ""
         (if (string.find template "$ROOM")
-            (string.gsub template "$ROOM" room)
-      (join-base-and-room template room)))))
+            (let [replaced (string.gsub template "$ROOM" room)]
+              replaced)
+            (join-base-and-room template room)))))
 
 (fn meeting-link []
   (let [room      (normalize-room-name (input-value :room))
@@ -118,8 +121,9 @@
     (if (or (= room "") (= template ""))
         ""
         (if (string.find template "$ROOM")
-            (string.gsub template "$ROOM" room-safe)
-      (join-base-and-room template room-safe)))))
+            (let [replaced (string.gsub template "$ROOM" room-safe)]
+              replaced)
+            (join-base-and-room template room-safe)))))
 
 ;; This creates the header of the app
 (render [:div {:class "container"}
@@ -151,6 +155,7 @@
        (not (value-empty? :datetime))
        (not (value-empty? :duration))
        (not (value-empty? :room))
+  (not= (meeting-link) "")
        (or (not= (selected-server-id) "custom")
            (not (value-empty? :custom-server)))))
 
@@ -308,8 +313,12 @@
        [:select {:id "server"
            :rvid "server"
            :onchange (fn [el]
-                       (let [target (get-input-target el)]
-                         (set state.server-id target.value)
+                       (let [server-val (trim-string (input-value :server))]
+                         (set state.server-id (if (= server-val "") default-server-id server-val))
+                         ;; When switching back from custom to predefined server,
+                         ;; clear stale custom URL to avoid preview confusion.
+                         (when (and (not= state.server-id "custom") (. RV.id :custom-server))
+                           (set (. RV.id :custom-server :value) ""))
                          (app.render)))}
         (table.unpack
           (icollect [_ opt (ipairs server-options)]
