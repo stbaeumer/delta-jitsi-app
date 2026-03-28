@@ -111,7 +111,7 @@
     (if (or (= room "") (= template ""))
         ""
         (if (string.find template "%$ROOM")
-            (let [replaced _ (string.gsub template "%$ROOM" room)]
+            (let [[replaced _] (string.gsub template "%$ROOM" room)]
               replaced)
             (join-base-and-room template room)))))
 
@@ -128,7 +128,7 @@
     (if (or (= room "") (= template ""))
         ""
         (if (string.find template "%$ROOM")
-            (let [replaced _ (string.gsub template "%$ROOM" room-safe)]
+            (let [[replaced _] (string.gsub template "%$ROOM" room-safe)]
               replaced)
             (join-base-and-room template room-safe)))))
 
@@ -429,7 +429,7 @@
                 :disabled (if (form-has-content?) false true)}]]
       (if state.send-feedback
           [:p {:class "send-feedback"} state.send-feedback])]]
-    ]"main"))
+    ] "main"))
 
 (app.render)
 
