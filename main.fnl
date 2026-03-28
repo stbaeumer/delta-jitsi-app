@@ -88,7 +88,8 @@
 
 (fn normalize-room-name [room]
   (let [trimmed (trim-string room)]
-    (string.gsub trimmed "%s+" "_")))
+    (let [normalized _] (string.gsub trimmed "%s+" "_")
+      normalized)))
 
 (fn strip-room-placeholder [template]
   (let [t (trim-string template)]
@@ -97,7 +98,7 @@
       (trim-string no-tag))))
 
 (fn join-base-and-room [base room]
-  (let [clean-base (trim-string base)]
+  (let [clean-base (strip-room-placeholder base)]
     (if (or (= clean-base "") (= room ""))
         ""
         (if (string.find clean-base "/$")
@@ -109,19 +110,25 @@
         template (trim-string (selected-server-template))]
     (if (or (= room "") (= template ""))
         ""
-        (if (string.find template "$ROOM")
-            (let [replaced (string.gsub template "$ROOM" room)]
+        (if (string.find template "%$ROOM")
+            (let [replaced _ (string.gsub template "%$ROOM" room)]
               replaced)
             (join-base-and-room template room)))))
 
 (fn meeting-link []
   (let [room      (normalize-room-name (input-value :room))
         template  (trim-string (selected-server-template))
-        room-safe (js.global.encodeURIComponent room)]
+        room-safe (let [encoded (js.global.encodeURIComponent room)]
+                    (if (or (= encoded nil)
+                            (= encoded js.null)
+                            (= encoded js.global.undefined)
+                            (= encoded "undefined"))
+                        room
+                        encoded))]
     (if (or (= room "") (= template ""))
         ""
-        (if (string.find template "$ROOM")
-            (let [replaced (string.gsub template "$ROOM" room-safe)]
+        (if (string.find template "%$ROOM")
+            (let [replaced _ (string.gsub template "%$ROOM" room-safe)]
               replaced)
             (join-base-and-room template room-safe)))))
 
@@ -173,18 +180,18 @@
 (fn send-with-app-icon [text]
   (let [fallback-msg (js.new js.global.Object)]
     (set (. fallback-msg :text) text)
-    ((js.global.fetch "icon.png")
-     :then (fn [resp] (resp:blob))
-     :then (fn [blob]
-             (let [msg (js.new js.global.Object)
-                   file-obj (js.new js.global.Object)]
-               (set (. file-obj :name) "icon.png")
-               (set (. file-obj :blob) blob)
-               (set (. msg :text) text)
-               (set (. msg :file) file-obj)
-               (webxdc:sendToChat msg)))
-     :catch (fn [_]
-              (webxdc:sendToChat fallback-msg)))))
+    (let [req (js.global.fetch "icon.png")]
+  (let [p1 (req:then (fn [resp] (resp:blob)))
+    p2 (p1:then (fn [blob]
+          (let [msg (js.new js.global.Object)
+            file-obj (js.new js.global.Object)]
+            (set (. file-obj :name) "icon.png")
+            (set (. file-obj :blob) blob)
+            (set (. msg :text) text)
+            (set (. msg :file) file-obj)
+            (webxdc:sendToChat msg))))]
+    (p2:catch (fn [_]
+        (webxdc:sendToChat fallback-msg)))))))
 
 ;; Format a datetime-local value (YYYY-MM-DDThh:mm) in locale-aware form
 (fn format-datetime [iso-str]
