@@ -47,19 +47,36 @@
         (if (< stop start) "" (string.sub s start stop)))
       ""))
 
+(fn normalize-id [id]
+  (if (= (type id) :string)
+      id
+      (let [raw (tostring id)]
+        (if (= (string.sub raw 1 1) ":")
+            (string.sub raw 2)
+            raw))))
+
+(fn get-field [id]
+  (let [key (normalize-id id)]
+    (or (. RV.id key)
+        (. RV.id id)
+        (document:getElementById key))))
+
 (fn input-value [id]
-  (if (. RV.id id)
-      (or (. RV.id id :value) "")
+  (let [field (get-field id)]
+    (if field
+      (or field.value "")
       ""))
+
+(fn set-input-value [id value]
+  (let [field (get-field id)]
+    (when field
+      (set field.value value))))
 
 (fn value-empty? [id]
   (= (trim-string (input-value id)) ""))
 
 (fn selected-server-id []
-  (let [from-dom (trim-string (input-value :server))]
-    (if (not= from-dom "")
-        from-dom
-        (or state.server-id default-server-id))))
+  (or state.server-id default-server-id))
 
 (fn find-server-option [server-id]
   (var found nil)
@@ -170,9 +187,9 @@
 (fn reset []
   (each [_ v (ipairs [:title :description :audience :datetime :duration :agenda-link :room :custom-server])]
     (if (not (is-empty? v))
-        (set (. RV.id v :value) "")))
+        (set-input-value v "")))
   (set state.server-id default-server-id)
-  (set (. RV.id :server :value) default-server-id)
+  (set-input-value :server default-server-id)
   (set state.send-feedback nil)
   (app.render))
 
@@ -246,9 +263,9 @@
               (let [room (string.sub url (+ last-slash 1))
                     base (string.sub url 1 (- last-slash 1))]
                 (when (not= room "")
-                  (set (. RV.id :custom-server :value) (.. base "/$ROOM"))
+                  (set-input-value :custom-server (.. base "/$ROOM"))
                   (when (value-empty? :room)
-                    (set (. RV.id :room :value) room)))))))))))
+                    (set-input-value :room room)))))))))))
 
 (fn send-to-chat []
   (let [title         (trim-string (input-value :title))
@@ -340,12 +357,13 @@
        [:select {:id "server"
            :rvid "server"
            :onchange (fn [el]
-                       (let [server-val (trim-string (input-value :server))]
+                       (let [target (get-input-target el)
+                             server-val (trim-string target.value)]
                          (set state.server-id (if (= server-val "") default-server-id server-val))
                          ;; When switching back from custom to predefined server,
                          ;; clear stale custom URL to avoid preview confusion.
-                         (when (and (not= state.server-id "custom") (. RV.id :custom-server))
-                           (set (. RV.id :custom-server :value) ""))
+                         (when (not= state.server-id "custom")
+                           (set-input-value :custom-server ""))
                          (app.render)))}
         (table.unpack
           (icollect [_ opt (ipairs server-options)]
