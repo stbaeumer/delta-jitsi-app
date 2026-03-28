@@ -1,0 +1,5 @@
+dist/
+*~
+main.lua
+index.html
+.#*

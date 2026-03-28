@@ -1,0 +1,233 @@
+:root {
+     --wallet-green: #5ea66c;
+     --wallet-orange: #d46e20;
+     --wallet-orange-dark: #b95f1c;
+}
+
+/* Make sure to vertically center the text that's beside the icon */
+#title {
+    color: var(--wallet-green);
+   display: flex;
+   align-items: center;
+   gap: 0.5em;
+   justify-content: flex-start;
+   align-content: flex-start;
+}
+
+form > label {
+    font-size: 1.2rem;
+}
+
+.label-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.label-icon svg {
+    height: 21px;
+    width: 21px;
+}
+
+.example p {
+    color: var(--pico-muted-color);
+}
+
+#version {
+   color: var(--pico-muted-color);
+   text-align: center;
+}
+
+#version p {
+   margin: 0;
+}
+
+.license {
+   color: var(--pico-muted-color);
+   padding-bottom: 0.5em;
+}
+
+#help {
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+/* Wallet Card Styles */
+.wallet-card {
+    border: 2px solid var(--pico-primary);
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--pico-background-color) 0%, var(--pico-secondary-color) 100%);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.wallet-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--pico-primary);
+    padding-bottom: 0.5rem;
+}
+
+.wallet-header h3 {
+    margin: 0;
+    color: var(--pico-primary);
+    font-weight: bold;
+}
+
+.wallet-header svg {
+    height: 28px;
+    width: 28px;
+    color: var(--pico-primary);
+}
+
+.wallet-description {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+    color: var(--pico-text-color);
+}
+
+.wallet-description svg {
+    height: 18px;
+    width: 18px;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.wallet-url {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.75rem 0;
+}
+
+.wallet-url svg {
+    height: 18px;
+    width: 18px;
+    flex-shrink: 0;
+}
+
+.wallet-url a {
+    word-break: break-all;
+}
+
+.wallet-qrcode {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.75rem 0;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.wallet-qrcode svg {
+    height: 18px;
+    width: 18px;
+}
+
+.wallet-qrcode img {
+    border: 1px solid var(--pico-primary);
+    border-radius: 4px;
+}
+
+.wallet-datetime {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.75rem 0;
+    color: var(--pico-primary);
+    font-weight: 500;
+}
+
+.wallet-datetime svg {
+    height: 18px;
+    width: 18px;
+}
+
+.wallet-location {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.75rem 0;
+    color: var(--pico-muted-color);
+}
+
+.wallet-location svg {
+    height: 18px;
+    width: 18px;
+    flex-shrink: 0;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.button-group input[type="button"] {
+    margin: 0;
+}
+
+.button-group .primary {
+    background-color: var(--wallet-orange);
+    border-color: var(--wallet-orange);
+}
+
+.button-group .primary:hover,
+.button-group .primary:focus {
+    background-color: var(--wallet-orange-dark);
+    border-color: var(--wallet-orange-dark);
+}
+
+.button-group .outline {
+    color: var(--wallet-orange);
+    border-color: var(--wallet-orange);
+}
+
+.button-group .outline:hover,
+.button-group .outline:focus {
+    color: #fff;
+    background-color: var(--wallet-orange);
+    border-color: var(--wallet-orange);
+}
+
+.send-feedback {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--wallet-green);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--wallet-green) 12%, white);
+    color: var(--wallet-green);
+    font-weight: 600;
+}
+
+.auto-reset-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+}
+
+.auto-reset-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+

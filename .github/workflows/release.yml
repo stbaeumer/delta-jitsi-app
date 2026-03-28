@@ -1,0 +1,115 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get current version
+        id: version
+        run: |
+          VERSION=$(grep -oP 'version = "\K[^"]+' manifest.toml)
+          echo "current=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+      
+      - name: Determine release version
+        id: release_version
+        run: |
+          CURRENT=${{ steps.version.outputs.current }}
+          if git rev-parse "v$CURRENT" >/dev/null 2>&1; then
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            NEW_PATCH=$((PATCH + 1))
+            RELEASE_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          else
+            RELEASE_VERSION="$CURRENT"
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          fi
+          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $RELEASE_VERSION"
+      
+      - name: Update version in manifest.toml
+        if: steps.release_version.outputs.bumped == 'true'
+        run: |
+          NEW_VERSION=${{ steps.release_version.outputs.version }}
+          sed -i "s/version = \"[^\"]*\"/version = \"$NEW_VERSION\"/" manifest.toml
+          cat manifest.toml
+      
+      - name: Update version in main.fnl
+        if: steps.release_version.outputs.bumped == 'true'
+        run: |
+          NEW_VERSION=${{ steps.release_version.outputs.version }}
+          sed -i "s/Version [0-9.]\+/Version $NEW_VERSION/" main.fnl
+          grep "Version" main.fnl || echo "Version line not found - skipping"
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.3 lua-filesystem lua-posix zip curl make git
+
+          # Prefer official versioned download; fall back to source build.
+          FENNEL_VERSION="1.6.1"
+          FENNEL_URL="https://fennel-lang.org/downloads/fennel-${FENNEL_VERSION}"
+
+          if curl -fsSL "$FENNEL_URL" -o /tmp/fennel && head -n 1 /tmp/fennel | grep -q '^#!'; then
+            chmod +x /tmp/fennel
+            sudo install -m 0755 /tmp/fennel /usr/local/bin/fennel
+            echo "Installed fennel from: $FENNEL_URL"
+          else
+            echo "Official download failed, building fennel from source..."
+            rm -rf /tmp/fennel-src
+            git clone --depth 1 https://git.sr.ht/~technomancy/fennel /tmp/fennel-src
+            make -C /tmp/fennel-src fennel
+            sudo install -m 0755 /tmp/fennel-src/fennel /usr/local/bin/fennel
+          fi
+
+          fennel --version
+      
+      - name: Build app
+        run: |
+          fennel build.fnl
+      
+      - name: Check build artifacts
+        run: |
+          ls -la dist/ || echo "dist directory not found"
+          ls -la *.html || echo "No HTML files found"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release_version.outputs.version }}
+          name: v${{ steps.release_version.outputs.version }}
+          prerelease: true
+          files: |
+            dist/*.xdc
+            index.html
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Commit version update
+        if: steps.release_version.outputs.bumped == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add manifest.toml main.fnl
+          git commit -m "chore: bump version to ${{ steps.release_version.outputs.version }}" || echo "Nothing to commit"
+      
+      - name: Push version update
+        if: steps.release_version.outputs.bumped == 'true'
+        run: |
+          git push origin master || echo "Push failed or nothing to push"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
