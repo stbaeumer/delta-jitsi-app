@@ -21,7 +21,7 @@
       ;; These are the commands that we want to run
       cmds     ["mkdir -p dist"
                 "rm -rf dist/*"
-                "zip -9 -r dist/delta-wallet.xdc index.html icon.png icon.svg manifest.toml assets/pico.indigo.min.css style.css libs/retrov.min.js libs/fengari-web.js main.lua"]
+                "zip -9 -r dist/delta-jitsi-app.xdc index.html icon.png icon.svg manifest.toml assets/pico.indigo.min.css style.css libs/retrov.min.js libs/fengari-web.js main.lua"]
 
       ;; These are the files that we want to watch
       ;; (not recursive, only the current directory is watched)

@@ -88,7 +88,7 @@ fennel build.fnl
 
 This compiles the Fennel code to Lua, bundles everything, and creates:
 - `index.html` - Standalone HTML file
-- `dist/delta-jitsi-invite.xdc` - WebXDC app file for Delta Chat
+- `dist/delta-jitsi-app.xdc` - WebXDC app file for Delta Chat
 
 ## 📄 License
 

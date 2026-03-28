@@ -291,12 +291,13 @@
        [:select {:id "server"
            :rvid "server"
            :onchange (fn [el] (app.render))}
-      (icollect [_ opt (ipairs server-options)]
-        [:option {:value opt.id
-            :selected (if (= opt.id (selected-server-id)) "" nil)}
-         (if (= opt.id "custom")
-           (i18n.text :custom-server)
-           opt.template)])]
+        (table.unpack
+          (icollect [_ opt (ipairs server-options)]
+            [:option {:value opt.id
+                      :selected (if (= opt.id (selected-server-id)) "" nil)}
+             (if (= opt.id "custom")
+                 (i18n.text :custom-server)
+                 opt.template)]))]
        [:small {} (i18n.text :server-description)]]
 
       ;; Custom server input
