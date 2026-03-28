@@ -427,7 +427,7 @@
           [:option {:value "en"} "English"]]
          [:div {:id "version"}
           [:hr {}]
-          [:p {} "Version 0.1.3"]
+          [:p {} "Version 0.1.4"]
           [:hr {}]
           [:p {:class "license"} (i18n.text :anti-capitalist)]
           [:p {:class "license"} (i18n.text :open-source)]]] "#footer")
