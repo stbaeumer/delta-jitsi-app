@@ -87,9 +87,9 @@
               (. (. server-options 1) :label))))))
 
 (fn normalize-room-name [room]
-  (let [trimmed (trim-string room)]
-    (let [normalized _] (string.gsub trimmed "%s+" "_")
-      normalized)))
+  (let [trimmed (trim-string room)
+        [normalized _] (string.gsub trimmed "%s+" "_")]
+    normalized))
 
 (fn strip-room-placeholder [template]
   (let [t (trim-string template)]
@@ -230,6 +230,26 @@
                :oninput (fn [el] (app.render))}]
    [:small {} (i18n.text description-key)]])
 
+;; When the user pastes/enters a full URL (e.g. https://meet.example.org/MyRoom)
+;; without the $ROOM placeholder, extract the last path segment as room name,
+;; replace it with $ROOM in the server field, and populate the room field.
+(fn extract-and-apply-room-from-url []
+  (let [url (trim-string (input-value :custom-server))]
+    (when (and (not= url "") (not (string.find url "%$ROOM")))
+      (let [(_ last-slash) (string.find url ".*/")
+            (_ scheme-end) (string.find url "://")]
+        (when last-slash
+          ;; path-slash = first "/" after the scheme (i.e. after "://")
+          ;; Ensures we don't mistake the scheme slashes for the path
+          (let [path-slash (string.find url "/" (+ (or scheme-end 0) 1))]
+            (when path-slash
+              (let [room (string.sub url (+ last-slash 1))
+                    base (string.sub url 1 (- last-slash 1))]
+                (when (not= room "")
+                  (set (. RV.id :custom-server :value) (.. base "/$ROOM"))
+                  (when (value-empty? :room)
+                    (set (. RV.id :room :value) room)))))))))))
+
 (fn send-to-chat []
   (let [title         (trim-string (input-value :title))
         description   (trim-string (input-value :description))
@@ -341,7 +361,16 @@
         [:div {}
          [:label {:for "custom-server"}
         [:div {:class "label-icon"} icons.server [:strong {} (i18n.text :custom-server-field)]]]
-         (input-template :custom-server :custom-server-placeholder :custom-server-description)]
+         [:div {}
+          [:input {:id "custom-server"
+                   :rvid "custom-server"
+                   :type "text"
+                   :placeholder (i18n.text :custom-server-placeholder)
+                   :oninput (fn [el] (app.render))
+                   :onblur (fn [el]
+                              (extract-and-apply-room-from-url)
+                              (app.render))}]
+          [:small {} (i18n.text :custom-server-description)]]]
         false)
 
       ;; Room name

@@ -46,7 +46,7 @@
      :custom-server "Anderer Server"
      :custom-server-field "Eigener Server-URL"
      :custom-server-placeholder "z.B. https://meet.example.org/$ROOM"
-     :custom-server-description "Server-URL mit oder ohne $ROOM-Platzhalter"
+     :custom-server-description "Server-URL mit oder ohne Raumplatzhalter. Beispiel: https://meet.example.org/$ROOM"
 
      :room-field "Raumname"
      :room-placeholder "z.B. projekt-standup"
@@ -105,7 +105,7 @@
      :custom-server "Other server"
      :custom-server-field "Custom server URL"
      :custom-server-placeholder "e.g., https://meet.example.org/$ROOM"
-     :custom-server-description "Server URL with or without $ROOM placeholder"
+     :custom-server-description "Server URL with or without room placeholder. Example: https://meet.example.org/$ROOM"
 
      :room-field "Room name"
      :room-placeholder "e.g., project-standup"
