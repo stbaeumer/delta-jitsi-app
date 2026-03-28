@@ -32,6 +32,7 @@
      :agenda-link-field "Einladung / Agenda (Link)"
      :agenda-link-placeholder "z.B. https://example.org/agenda"
      :agenda-link-description "Optionaler Link zu Einladung, Agenda oder Unterlagen"
+      :join-link-field "Beitrittslink"
 
            :datetime-field "Datum und Uhrzeit"
      :datetime-description "Wann startet die Konferenz?"
@@ -90,6 +91,7 @@
      :agenda-link-field "Invitation / Agenda (link)"
      :agenda-link-placeholder "e.g., https://example.org/agenda"
      :agenda-link-description "Optional link to invitation, agenda or documents"
+      :join-link-field "Join link"
 
            :datetime-field "Date and Time"
      :datetime-description "When does the conference start?"

@@ -16,7 +16,7 @@
 
 (local app {})
 ;; auto-reset preference is persisted in localStorage
-(local state {:invite-file nil :send-feedback nil
+(local state {:send-feedback nil
               :server-id nil
               :auto-reset (= (js.global.localStorage:getItem :auto-reset) :true)})
 
@@ -142,8 +142,7 @@
       (not (value-empty? :duration))
       (not (value-empty? :agenda-link))
       (not (value-empty? :room))
-      (not (value-empty? :custom-server))
-      (not= state.invite-file nil)))
+  (not (value-empty? :custom-server))))
 
 (fn form-valid? []
   (and (not (value-empty? :title))
@@ -152,7 +151,6 @@
        (not (value-empty? :datetime))
        (not (value-empty? :duration))
        (not (value-empty? :room))
-  (not= (selected-server-template) "")
        (or (not= (selected-server-id) "custom")
            (not (value-empty? :custom-server)))))
 
@@ -163,23 +161,25 @@
         (set (. RV.id v :value) "")))
   (set state.server-id default-server-id)
   (set (. RV.id :server :value) default-server-id)
-  (if (. RV.id :meeting-file)
-      (set (. RV.id :meeting-file :value) ""))
-  (set state.invite-file nil)
   (set state.send-feedback nil)
   (app.render))
 
-;; Read an optional invitation / agenda file
-(fn read-invite-file [el]
-  (let [target (get-input-target el)
-        file   (. target.files 0)]
-    (if file
-        (do
-          (set state.invite-file file)
-          (app.render))
-        (do
-          (set state.invite-file nil)
-          (app.render)))))
+;; Send chat message with icon.png attached so the conference context is visible at a glance.
+(fn send-with-app-icon [text]
+  (let [fallback-msg (js.new js.global.Object)]
+    (set (. fallback-msg :text) text)
+    ((js.global.fetch "icon.png")
+     :then (fn [resp] (resp:blob))
+     :then (fn [blob]
+             (let [msg (js.new js.global.Object)
+                   file-obj (js.new js.global.Object)]
+               (set (. file-obj :name) "icon.png")
+               (set (. file-obj :blob) blob)
+               (set (. msg :text) text)
+               (set (. msg :file) file-obj)
+               (webxdc:sendToChat msg)))
+     :catch (fn [_]
+              (webxdc:sendToChat fallback-msg)))))
 
 ;; Format a datetime-local value (YYYY-MM-DDThh:mm) in locale-aware form
 (fn format-datetime [iso-str]
@@ -228,29 +228,27 @@
         room          (normalize-room-name (input-value :room))
         server-value  (server-with-room)
         join-link     (meeting-link)
-        meeting-text  (.. "🎥 " title
-                          "\n\n📝 " description
-                          "\n\n👥 " audience
-                          "\n\n📅 " datetime
-                          "\n\n⏱️ " duration " " (i18n.text :minutes)
-              "\n\n🖥️ " server-value
-                          "\n\n🚪 " room
-                          "\n\n🔗 " join-link
-                          (if (= agenda-link "") "" (.. "\n\n📎 " agenda-link)))]
-    ;; Konferenz-Nachricht: Text + optionale Datei in EINER Nachricht.
-    (let [main-obj (js.new js.global.Object)]
-      (set (. main-obj :text) meeting-text)
-      (when state.invite-file
-        (let [invite-file-obj (js.new js.global.Object)]
-          (set (. invite-file-obj :name) (or state.invite-file.name "invitation.pdf"))
-          (set (. invite-file-obj :blob) state.invite-file)
-          (set (. main-obj :file) invite-file-obj)))
-      (webxdc:sendToChat main-obj))
+        sections      [(.. "🎥 " title)
+                       (.. "📝 " (i18n.text :description-field) ":\n" description)
+                       (.. "👥 " (i18n.text :audience-field) ":\n" audience)
+                       (.. "📅 " (i18n.text :datetime-field) ":\n" datetime)
+                       (.. "⏱️ " (i18n.text :duration-field) ":\n" duration " " (i18n.text :minutes))
+                       (.. "🖥️ " (i18n.text :server-field) ":\n" server-value)
+                       (.. "🚪 " (i18n.text :room-field) ":\n" room)
+                       (.. "🔗 " (i18n.text :join-link-field) ":\n" join-link)]
+        meeting-text  (table.concat
+                       (if (= agenda-link "")
+                           sections
+                           (let [with-agenda []]
+                             (each [_ s (ipairs sections)]
+                               (table.insert with-agenda s))
+                             (table.insert with-agenda
+                                           (.. "📎 " (i18n.text :agenda-link-field) ":\n" agenda-link))
+                             with-agenda)
+                       "\n\n")]
+    (send-with-app-icon meeting-text)
     ;; Statusmeldung in der UI.
-    (set state.send-feedback
-         (.. "✅ Gesendet"
-             (if state.invite-file " · Datei angehängt" "")
-             "."))
+    (set state.send-feedback "✅ Gesendet.")
     (if state.auto-reset
         (reset)
         (app.render))))
@@ -297,15 +295,6 @@
           :min "1"
                 :oninput (fn [el] (app.render))}]
        [:small {} (i18n.text :duration-description)]]
-
-      ;; Optional file upload
-      [:label {:for "meeting-file"}
-       [:div {:class "label-icon"} icons.files [:strong {} (i18n.text :meeting-file-field)]]]
-      [:div {}
-       [:input {:id "meeting-file"
-          :type "file"
-          :onchange read-invite-file}]
-       [:small {} (i18n.text :meeting-file-description)]]
 
       ;; Optional link upload
       [:label {:for "agenda-link"}
@@ -392,11 +381,7 @@
         (if (not (value-empty? :agenda-link))
           [:p {:class "conference-agenda-link"}
            icons.attachment
-           [:a {:href (input-value :agenda-link) :target "_blank"} (input-value :agenda-link)]])
-        (if state.invite-file
-          [:p {:class "conference-file"}
-           icons.files
-           [:span {} state.invite-file.name]])]]
+           [:a {:href (input-value :agenda-link) :target "_blank"} (input-value :agenda-link)]])]]
           [:article {:class "example"}
            [:header {} (i18n.text :preview)]
          [:p {:style "color: var(--pico-muted-color)"} (i18n.text :preview-placeholder)]])
