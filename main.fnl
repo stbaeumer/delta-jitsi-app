@@ -87,6 +87,30 @@
   (let [trimmed (trim-string room)]
     (string.gsub trimmed "%s+" "_")))
 
+(fn strip-room-placeholder [template]
+  (let [t (trim-string template)]
+    (trim-string
+      (string.gsub
+        (string.gsub t "/%$ROOM" "")
+        "%$ROOM" ""))))
+
+(fn join-base-and-room [base room]
+  (let [clean-base (trim-string base)]
+    (if (or (= clean-base "") (= room ""))
+        ""
+        (if (string.find clean-base "/$")
+            (.. clean-base room)
+            (.. clean-base "/" room)))))
+
+(fn server-with-room []
+  (let [room     (normalize-room-name (input-value :room))
+        template (trim-string (selected-server-template))]
+    (if (or (= room "") (= template ""))
+        ""
+        (if (string.find template "$ROOM")
+            (string.gsub template "$ROOM" room)
+      (join-base-and-room template room)))))
+
 (fn meeting-link []
   (let [room      (normalize-room-name (input-value :room))
         template  (trim-string (selected-server-template))
@@ -95,7 +119,7 @@
         ""
         (if (string.find template "$ROOM")
             (string.gsub template "$ROOM" room-safe)
-            (.. template (if (string.find template "/$") "" "/") room-safe)))))
+      (join-base-and-room template room-safe)))))
 
 ;; This creates the header of the app
 (render [:div {:class "container"}
@@ -128,7 +152,7 @@
        (not (value-empty? :datetime))
        (not (value-empty? :duration))
        (not (value-empty? :room))
-       (not= (meeting-link) "")
+  (not= (selected-server-template) "")
        (or (not= (selected-server-id) "custom")
            (not (value-empty? :custom-server)))))
 
@@ -202,7 +226,7 @@
         duration      (trim-string (input-value :duration))
         agenda-link   (trim-string (input-value :agenda-link))
         room          (normalize-room-name (input-value :room))
-        server-value  (selected-server-template)
+        server-value  (server-with-room)
         join-link     (meeting-link)
         meeting-text  (.. "🎥 " title
                           "\n\n📝 " description
@@ -304,7 +328,7 @@
                       :selected (if (= opt.id (selected-server-id)) "" nil)}
              (if (= opt.id "custom")
                  (i18n.text :custom-server)
-                 opt.template)]))]
+               (strip-room-placeholder opt.template))]))]
        [:small {} (i18n.text :server-description)]]
 
       ;; Custom server input
@@ -356,7 +380,7 @@
         (if (not= (selected-server-template) "")
           [:p {:class "conference-server"}
            icons.server
-           [:span {} (selected-server-template)]])
+           [:span {} (server-with-room)]])
         (if (not (value-empty? :room))
           [:p {:class "conference-room"}
            icons.room
