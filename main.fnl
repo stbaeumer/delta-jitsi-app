@@ -244,7 +244,7 @@
                                (table.insert with-agenda s))
                              (table.insert with-agenda
                                            (.. "📎 " (i18n.text :agenda-link-field) ":\n" agenda-link))
-                             with-agenda)
+                             with-agenda))
                        "\n\n")]
     (send-with-app-icon meeting-text)
     ;; Statusmeldung in der UI.
