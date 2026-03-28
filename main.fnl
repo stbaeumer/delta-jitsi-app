@@ -16,12 +16,83 @@
 
 (local app {})
 ;; auto-reset preference is persisted in localStorage
-(local state {:qrcode-data nil :qrcode-file nil :send-feedback nil
+(local state {:invite-file nil :send-feedback nil
               :auto-reset (= (js.global.localStorage:getItem :auto-reset) :true)})
+
+(local server-options
+  [{:id "brie-fi" :label "brie.fi" :template "https://brie.fi/ng/$ROOM"}
+   {:id "chitchatter" :label "chitchatter.im" :template "https://chitchatter.im/private/$ROOM"}
+   {:id "galene" :label "galene.org" :template "https://galene.org:8443/group/public-vp9/$ROOM"}
+   {:id "kmeet" :label "kmeet.infomaniak.com" :template "https://kmeet.infomaniak.com/$ROOM"}
+   {:id "mirotalk-up" :label "mirotalk.up.railway.app" :template "https://mirotalk.up.railway.app/join/$ROOM"}
+   {:id "mirotalk-p2p" :label "p2p.mirotalk.com" :template "https://p2p.mirotalk.com/join/$ROOM"}
+   {:id "mirotalk-sfu" :label "sfu.mirotalk.com" :template "https://sfu.mirotalk.com/join/$ROOM"}
+   {:id "systemli" :label "meet.systemli.org" :template "http://meet.systemli.org/$ROOM"}
+   {:id "custom" :label "custom" :template ""}])
+
+(local default-server-id (. (. server-options 1) :id))
 
 ;; Some handlers receive the element, others an event; normalize both cases.
 (fn get-input-target [el-or-event]
   (or el-or-event.target el-or-event))
+
+(fn trim-string [s]
+  (if s
+      (let [start (or (string.find s "%S") 1)
+            rev   (string.reverse s)
+            r-end (or (string.find rev "%S") 1)
+            stop  (+ 1 (- (# s) r-end))]
+        (if (< stop start) "" (string.sub s start stop)))
+      ""))
+
+(fn input-value [id]
+  (if (. RV.id id)
+      (or (. RV.id id :value) "")
+      ""))
+
+(fn value-empty? [id]
+  (= (trim-string (input-value id)) ""))
+
+(fn selected-server-id []
+  (let [val (trim-string (input-value :server))]
+    (if (= val "")
+        default-server-id
+        val)))
+
+(fn find-server-option [server-id]
+  (var found nil)
+  (each [_ opt (ipairs server-options)]
+    (if (= opt.id server-id)
+        (set found opt)))
+  found)
+
+(fn selected-server-template []
+  (let [server-id (selected-server-id)]
+    (if (= server-id "custom")
+        (trim-string (input-value :custom-server))
+        (let [entry (find-server-option server-id)]
+          (if entry
+              entry.template
+              (. (. server-options 1) :template))))))
+
+(fn selected-server-label []
+  (let [server-id (selected-server-id)]
+    (if (= server-id "custom")
+        (i18n.text :custom-server)
+        (let [entry (find-server-option server-id)]
+          (if entry
+              entry.label
+              (. (. server-options 1) :label))))))
+
+(fn meeting-link []
+  (let [room      (trim-string (input-value :room))
+        template  (trim-string (selected-server-template))
+        room-safe (js.global.encodeURIComponent room)]
+    (if (or (= room "") (= template ""))
+        ""
+        (if (string.find template "$ROOM")
+            (string.gsub template "$ROOM" room-safe)
+            (.. template (if (string.find template "/$") "" "/") room-safe)))))
 
 ;; This creates the header of the app
 (render [:div {:class "container"}
@@ -29,7 +100,7 @@
           [:ul {}
            [:li {}
             [:div {:id "title"}
-             [:b {} "💳 Delta Wallet"]]]]]] "#nav")
+             [:b {} "🎥 Delta Jitsi Invite"]]]]]] "#nav")
 
 ;; Check if the input fields are filled or not.
 (fn is-empty? [key]
@@ -37,39 +108,49 @@
 
 ;; Check if any required field is filled
 (fn form-has-content? []
-  (or (not (is-empty? :title))
-      (not (is-empty? :description))
-      (not (is-empty? :url))
-      (not= state.qrcode-data nil)
-      (not (is-empty? :datetime))
-      (not (is-empty? :location))))
+  (or (not (value-empty? :title))
+      (not (value-empty? :description))
+      (not (value-empty? :audience))
+      (not (value-empty? :datetime))
+      (not (value-empty? :duration))
+      (not (value-empty? :agenda-link))
+      (not (value-empty? :room))
+      (not (value-empty? :custom-server))
+      (not= state.invite-file nil)))
+
+(fn form-valid? []
+  (and (not (value-empty? :title))
+       (not (value-empty? :description))
+       (not (value-empty? :audience))
+       (not (value-empty? :datetime))
+       (not (value-empty? :duration))
+       (not (value-empty? :room))
+       (not= (meeting-link) "")
+       (or (not= (selected-server-id) "custom")
+           (not (value-empty? :custom-server)))))
 
 ;; Reset the form
 (fn reset []
-  (each [_ v (ipairs [:title :description :url :datetime :location])]
+  (each [_ v (ipairs [:title :description :audience :datetime :duration :agenda-link :room :custom-server])]
     (if (not (is-empty? v))
         (set (. RV.id v :value) "")))
-  (set state.qrcode-data nil)
-  (set state.qrcode-file nil)
+  (set (. RV.id :server :value) default-server-id)
+  (if (. RV.id :meeting-file)
+      (set (. RV.id :meeting-file :value) ""))
+  (set state.invite-file nil)
   (set state.send-feedback nil)
   (app.render))
 
-;; Read a QR-Code image file and store as data URL
-(fn read-qr-code [el]
+;; Read an optional invitation / agenda file
+(fn read-invite-file [el]
   (let [target (get-input-target el)
         file   (. target.files 0)]
     (if file
         (do
-          (set state.qrcode-file file)
-          (let [reader (js.new js.global.FileReader)]
-            (set reader.onload (fn [ev]
-                                 (set state.qrcode-data (or (?. ev :target :result)
-                                                             reader.result))
-                                 (app.render)))
-            (reader:readAsDataURL file)))
+          (set state.invite-file file)
+          (app.render))
         (do
-          (set state.qrcode-file nil)
-          (set state.qrcode-data nil)
+          (set state.invite-file nil)
           (app.render)))))
 
 ;; Format a datetime-local value (YYYY-MM-DDThh:mm) in locale-aware form
@@ -110,29 +191,37 @@
    [:small {} (i18n.text description-key)]])
 
 (fn send-to-chat []
-  (let [title       (if (is-empty? :title) "Wallet Entry" RV.id.title.value)
-        description (if (is-empty? :description) "" RV.id.description.value)
-        url         (if (is-empty? :url) "" RV.id.url.value)
-        datetime    (if (is-empty? :datetime) "" (format-datetime RV.id.datetime.value))
-        location    (if (is-empty? :location) "" RV.id.location.value)
-        wallet-text (.. "💳 " title
-                        (if (= description "") "" (.. "\n\n📝 " description))
-                        (if (= url "") "" (.. "\n\n🔗 " url))
-                        (if (= datetime "") "" (.. "\n\n📅 " datetime))
-                        (if (= location "") "" (.. "\n\n📍 " location)))]
-    ;; Wallet-Nachricht: Text + QR-Code-Bild in EINER Nachricht.
+  (let [title         (trim-string (input-value :title))
+        description   (trim-string (input-value :description))
+        audience      (trim-string (input-value :audience))
+        datetime      (if (value-empty? :datetime) "" (format-datetime (input-value :datetime)))
+        duration      (trim-string (input-value :duration))
+        agenda-link   (trim-string (input-value :agenda-link))
+        room          (trim-string (input-value :room))
+        server-value  (selected-server-template)
+        join-link     (meeting-link)
+        meeting-text  (.. "🎥 " title
+                          "\n\n📝 " description
+                          "\n\n👥 " audience
+                          "\n\n📅 " datetime
+                          "\n\n⏱️ " duration " " (i18n.text :minutes)
+              "\n\n🖥️ " server-value
+                          "\n\n🚪 " room
+                          "\n\n🔗 " join-link
+                          (if (= agenda-link "") "" (.. "\n\n📎 " agenda-link)))]
+    ;; Konferenz-Nachricht: Text + optionale Datei in EINER Nachricht.
     (let [main-obj (js.new js.global.Object)]
-      (set (. main-obj :text) wallet-text)
-      (when state.qrcode-file
-        (let [qr-file-obj (js.new js.global.Object)]
-          (set (. qr-file-obj :name) (or state.qrcode-file.name "qrcode.png"))
-          (set (. qr-file-obj :blob) state.qrcode-file)
-          (set (. main-obj :file) qr-file-obj)))
+      (set (. main-obj :text) meeting-text)
+      (when state.invite-file
+        (let [invite-file-obj (js.new js.global.Object)]
+          (set (. invite-file-obj :name) (or state.invite-file.name "invitation.pdf"))
+          (set (. invite-file-obj :blob) state.invite-file)
+          (set (. main-obj :file) invite-file-obj)))
       (webxdc:sendToChat main-obj))
     ;; Statusmeldung in der UI.
     (set state.send-feedback
          (.. "✅ Gesendet"
-             (if state.qrcode-file " · QR-Code angehängt" "")
+             (if state.invite-file " · Datei angehängt" "")
              "."))
     (if state.auto-reset
         (reset)
@@ -154,68 +243,121 @@
       [:label {:for "description"} 
        [:div {:class "label-icon"} icons.description [:strong {} (i18n.text :description-field)]]]
       (textarea-template :description :description-placeholder :description-description)
-      
-      ;; URL
-      [:label {:for "url"} 
-       [:div {:class "label-icon"} icons.url [:strong {} (i18n.text :url-field)]]]
-      (input-template :url :url-placeholder :url-description)
-      
-      ;; QR-Code - Bild hochladen
-      [:label {:for "qrcode"} 
-       [:div {:class "label-icon"} icons.qrcode [:strong {} (i18n.text :qrcode-field)]]]
-      [:div {}
-       [:input {:id "qrcode"
-                :type "file"
-                :accept "image/png"
-                :onchange read-qr-code}]
-       [:small {} (i18n.text :qrcode-description)]]
+
+      ;; Audience
+      [:label {:for "audience"}
+       [:div {:class "label-icon"} icons.audience [:strong {} (i18n.text :audience-field)]]]
+      (input-template :audience :audience-placeholder :audience-description)
       
       ;; Date and Time
-      [:label {:for "datetime"} 
+      [:label {:for "datetime"}
        [:div {:class "label-icon"} icons.calendar [:strong {} (i18n.text :datetime-field)]]]
       [:div {}
        [:input {:id "datetime"
-                :rvid "datetime"
-                :type "datetime-local"
-                :oninput (fn [el] (app.render))}]
+          :rvid "datetime"
+          :type "datetime-local"
+          :oninput (fn [el] (app.render))}]
        [:small {} (i18n.text :datetime-description)]]
       
-      ;; Treffpunkt (optional)
-      [:label {:for "location"}
-       [:div {:class "label-icon"} icons.location [:strong {} (i18n.text :location-field)]]]
-      (input-template :location :location-placeholder :location-description)
+      ;; Duration (minutes)
+      [:label {:for "duration"}
+       [:div {:class "label-icon"} icons.duration [:strong {} (i18n.text :duration-field)]]]
+      [:div {}
+       [:input {:id "duration"
+          :rvid "duration"
+          :type "number"
+          :min "1"
+                :oninput (fn [el] (app.render))}]
+       [:small {} (i18n.text :duration-description)]]
 
+      ;; Optional file upload
+      [:label {:for "meeting-file"}
+       [:div {:class "label-icon"} icons.files [:strong {} (i18n.text :meeting-file-field)]]]
+      [:div {}
+       [:input {:id "meeting-file"
+          :type "file"
+          :onchange read-invite-file}]
+       [:small {} (i18n.text :meeting-file-description)]]
+
+      ;; Optional link upload
+      [:label {:for "agenda-link"}
+       [:div {:class "label-icon"} icons.url [:strong {} (i18n.text :agenda-link-field)]]]
+      (input-template :agenda-link :agenda-link-placeholder :agenda-link-description)
+
+      ;; Server dropdown
+      [:label {:for "server"}
+       [:div {:class "label-icon"} icons.server [:strong {} (i18n.text :server-field)]]]
+      [:div {}
+       [:select {:id "server"
+           :rvid "server"
+           :onchange (fn [el] (app.render))}
+      (icollect [_ opt (ipairs server-options)]
+        [:option {:value opt.id
+            :selected (if (= opt.id (selected-server-id)) "" nil)}
+         (if (= opt.id "custom")
+           (i18n.text :custom-server)
+           opt.template)])]
+       [:small {} (i18n.text :server-description)]]
+
+      ;; Custom server input
+      (if (= (selected-server-id) "custom")
+        [:div {}
+         [:label {:for "custom-server"}
+        [:div {:class "label-icon"} icons.server [:strong {} (i18n.text :custom-server-field)]]]
+         (input-template :custom-server :custom-server-placeholder :custom-server-description)])
+
+      ;; Room name
+      [:label {:for "room"}
+       [:div {:class "label-icon"} icons.room [:strong {} (i18n.text :room-field)]]]
+      (input-template :room :room-placeholder :room-description)
+      
       ;; Preview
       (if (form-has-content?)
           [:article {}
            [:header {} (i18n.text :preview)]
-           [:div {:class "wallet-card"}
-            [:div {:class "wallet-header"}
-             icons.wallet
-             [:h3 {} (if (is-empty? :title) "Wallet Entry" RV.id.title.value)]]
-            (if (not (is-empty? :description))
-                [:p {:class "wallet-description"} 
+         [:div {:class "conference-card"}
+        [:div {:class "conference-header"}
+         icons.conference
+         [:h3 {} (if (value-empty? :title) (i18n.text :meeting-default-title) (input-value :title))]]
+        (if (not (value-empty? :description))
+          [:p {:class "conference-description"}
                  icons.description
-                 [:span {} RV.id.description.value]])
-            (if (not (is-empty? :url))
-                [:p {:class "wallet-url"} 
-                 icons.url 
-                 [:a {:href RV.id.url.value :target "_blank"} RV.id.url.value]])
-            (if (not= state.qrcode-data nil)
-                [:p {:class "wallet-qrcode"}
-                 icons.qrcode
-                 [:img {:src state.qrcode-data :alt "QR Code" :style "max-width: 150px; max-height: 150px;"}]])
-            (if (not (is-empty? :datetime))
-                [:p {:class "wallet-datetime"}
+           [:span {} (input-value :description)]])
+        (if (not (value-empty? :audience))
+          [:p {:class "conference-audience"}
+           icons.audience
+           [:span {} (input-value :audience)]])
+        (if (not (value-empty? :datetime))
+          [:p {:class "conference-datetime"}
                  icons.calendar
-                 [:span {} (format-datetime RV.id.datetime.value)]])
-            (if (not (is-empty? :location))
-                [:p {:class "wallet-location"}
-                 icons.location
-                 [:span {} RV.id.location.value]])]]
+           [:span {} (format-datetime (input-value :datetime))]])
+        (if (not (value-empty? :duration))
+          [:p {:class "conference-duration"}
+           icons.duration
+           [:span {} (.. (input-value :duration) " " (i18n.text :minutes))]])
+        (if (not= (selected-server-template) "")
+          [:p {:class "conference-server"}
+           icons.server
+           [:span {} (selected-server-template)]])
+        (if (not (value-empty? :room))
+          [:p {:class "conference-room"}
+           icons.room
+           [:span {} (input-value :room)]])
+        (if (not= (meeting-link) "")
+          [:p {:class "conference-url"}
+           icons.url
+           [:a {:href (meeting-link) :target "_blank"} (meeting-link)]])
+        (if (not (value-empty? :agenda-link))
+          [:p {:class "conference-agenda-link"}
+           icons.attachment
+           [:a {:href (input-value :agenda-link) :target "_blank"} (input-value :agenda-link)]])
+        (if state.invite-file
+          [:p {:class "conference-file"}
+           icons.files
+           [:span {} state.invite-file.name]])]]
           [:article {:class "example"}
            [:header {} (i18n.text :preview)]
-           [:p {:style "color: var(--pico-muted-color)"} "Wallet-Vorschau erscheint hier..."]])
+         [:p {:style "color: var(--pico-muted-color)"} (i18n.text :preview-placeholder)]])
       
       ;; Auto-reset checkbox
       [:label {:class "auto-reset-label"}
@@ -234,7 +376,7 @@
       [:div {:class "button-group"}
        [:input {:type "button" 
                 :class "primary" 
-                :disabled (if (form-has-content?) false true) 
+                :disabled (if (form-valid?) false true)
                 :value (i18n.text :send) 
                 :onclick send-to-chat}]
        [:input {:type "button" 
@@ -258,7 +400,7 @@
           [:option {:value "en"} "English"]]
          [:div {:id "version"}
           [:hr {}]
-          [:p {} "Version 0.0.11"]
+          [:p {} "Version 0.1.0"]
           [:hr {}]
           [:p {:class "license"} (i18n.text :anti-capitalist)]
           [:p {:class "license"} (i18n.text :open-source)]]] "#footer")

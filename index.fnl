@@ -4,7 +4,7 @@
     [:meta {:charset "UTF-8"}]
     [:meta {:name "viewport"
             :content "width=device-width, initial-scale=1.0"}]
-    [:title {} "Found ICE"]
+        [:title {} "Delta Jitsi Invite"]
 
     ;; Add external assets
     (build.load-assets [["webxdc.js"                   :js  false ]

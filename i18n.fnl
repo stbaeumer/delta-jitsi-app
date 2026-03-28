@@ -6,8 +6,8 @@
      {
       ;; German - Default
       :de {:description [:div {}
-                         [:p {} [:b {} "💳 Delta Wallet"] " ist eine App zum Erstellen und Teilen von Wallet-Einträgen. Speichere Tickets, Coupons, Mitgliedskarten und Zertifikate."]
-                         [:p {} "Einfach die Informationen eingeben, ein schönes Wallet-Card-Format erhalten und direkt mit Freunden teilen!"]]
+          [:p {} [:b {} "🎥 Delta Jitsi Invite"] " ist eine App zum Erstellen und Teilen von Einladungen zu Videokonferenzen."]
+          [:p {} "Trage die Konferenzdaten ein, erzeuge einen Beitrittslink und teile die Einladung direkt im Chat."]]
            :select-language "Sprache wählen"
            :language "Sprache"
            :open-source "Diese ist eine Open-Source-App"
@@ -15,32 +15,47 @@
 
            ;; Titles
            :title-field "Titel"
-           :title-placeholder "z.B. Kinoticket"
-           :title-description "Name oder Bezeichnung des Wallet-Eintrags"
+     :title-placeholder "z.B. Team-Weekly"
+     :title-description "Titel der Konferenz"
 
            :description-field "Beschreibung"
-           :description-placeholder "z.B. Filmtitel, Datum, Sitz"
-           :description-description "Zusätzliche Details zum Eintrag"
+     :description-placeholder "z.B. Themen, Ziele, Ablauf"
+     :description-description "Kurze Beschreibung der Konferenz"
 
-           :url-field "URL"
-           :url-placeholder "z.B. https://kino.de/ticket/12345"
-           :url-description "Link zu mehr Informationen oder dem Ticket"
+     :audience-field "Zielgruppe"
+     :audience-placeholder "z.B. Projektteam, Kund:innen, Vorstand"
+     :audience-description "Für wen ist die Konferenz gedacht?"
 
-           :qrcode-field "QR-Code"
-           :qrcode-placeholder ""
-           :qrcode-description "PNG-Bild des QR-Codes hochladen (optional)"
+     :meeting-file-field "Einladung / Agenda (Datei)"
+     :meeting-file-description "Optionale Datei hochladen (z.B. PDF, Bild, Dokument)"
+
+     :agenda-link-field "Einladung / Agenda (Link)"
+     :agenda-link-placeholder "z.B. https://example.org/agenda"
+     :agenda-link-description "Optionaler Link zu Einladung, Agenda oder Unterlagen"
 
            :datetime-field "Datum und Uhrzeit"
-           :datetime-placeholder "z.B. 15. März 2025, 20:00 Uhr"
-           :datetime-description "Wann ist dieser Eintrag relevant?"
-           :now "Jetzt"
+     :datetime-description "Wann startet die Konferenz?"
+
+     :duration-field "Dauer in Minuten"
+     :duration-description "Geplante Dauer der Konferenz"
+     :minutes "Minuten"
+
+     :server-field "Server"
+     :server-description "Wähle einen vordefinierten Server oder nutze einen eigenen"
+     :custom-server "Anderer Server"
+     :custom-server-field "Eigener Server-URL"
+     :custom-server-placeholder "z.B. https://meet.example.org/$ROOM"
+     :custom-server-description "Server-URL mit oder ohne $ROOM-Platzhalter"
+
+     :room-field "Raumname"
+     :room-placeholder "z.B. projekt-standup"
+     :room-description "Individueller Name des Konferenzraums"
+
+     :meeting-default-title "Konferenz"
+     :preview-placeholder "Konferenz-Vorschau erscheint hier..."
 
            :files-field "Dateien"
            :files-description "PDF, Bilder oder andere Dateien anhängen (optional)"
-
-           :location-field "Treffpunkt"
-           :location-placeholder "z.B. Hauptbahnhof Berlin, Gleis 7"
-           :location-description "Wo findet der Termin statt? (optional)"
 
            :preview "Vorschau"
            :send "Senden"
@@ -49,8 +64,8 @@
            }
       ;; English
       :en {:description [:div {}
-                         [:p {} [:b {} "💳 Delta Wallet"] " is an app for creating and sharing wallet entries. Store tickets, coupons, membership cards and certificates."]
-                         [:p {} "Simply enter the information, get a beautiful wallet card format and share it directly with friends!"]]
+          [:p {} [:b {} "🎥 Delta Jitsi Invite"] " is an app for creating and sharing video conference invitations."]
+          [:p {} "Enter your conference details, generate a join link and share the invite directly in chat."]]
            :select-language "Select language"
            :language "Language"
            :open-source "This is an open-source app"
@@ -58,32 +73,47 @@
 
            ;; Titles
            :title-field "Title"
-           :title-placeholder "e.g., Cinema Ticket"
-           :title-description "Name or designation of the wallet entry"
+     :title-placeholder "e.g., Team Weekly"
+     :title-description "Conference title"
 
            :description-field "Description"
-           :description-placeholder "e.g., Movie title, date, seat"
-           :description-description "Additional details about the entry"
+     :description-placeholder "e.g., topics, goals, agenda"
+     :description-description "Short conference description"
 
-           :url-field "URL"
-           :url-placeholder "e.g., https://cinema.co.uk/ticket/12345"
-           :url-description "Link for more information or the ticket"
+     :audience-field "Audience"
+     :audience-placeholder "e.g., project team, customers, board"
+     :audience-description "Who is this conference for?"
 
-           :qrcode-field "QR Code"
-           :qrcode-placeholder ""
-           :qrcode-description "Upload a PNG image of the QR code (optional)"
+     :meeting-file-field "Invitation / Agenda (file)"
+     :meeting-file-description "Optional file upload (e.g., PDF, image, document)"
+
+     :agenda-link-field "Invitation / Agenda (link)"
+     :agenda-link-placeholder "e.g., https://example.org/agenda"
+     :agenda-link-description "Optional link to invitation, agenda or documents"
 
            :datetime-field "Date and Time"
-           :datetime-placeholder "e.g., March 15, 2025, 8:00 PM"
-           :datetime-description "When is this entry relevant?"
-           :now "Now"
+     :datetime-description "When does the conference start?"
+
+     :duration-field "Duration in minutes"
+     :duration-description "Planned conference duration"
+     :minutes "minutes"
+
+     :server-field "Server"
+     :server-description "Choose a predefined server or use your own"
+     :custom-server "Other server"
+     :custom-server-field "Custom server URL"
+     :custom-server-placeholder "e.g., https://meet.example.org/$ROOM"
+     :custom-server-description "Server URL with or without $ROOM placeholder"
+
+     :room-field "Room name"
+     :room-placeholder "e.g., project-standup"
+     :room-description "Individual name of the conference room"
+
+     :meeting-default-title "Conference"
+     :preview-placeholder "Conference preview appears here..."
 
            :files-field "Files"
            :files-description "Attach PDFs, images or other files (optional)"
-
-           :location-field "Location"
-           :location-placeholder "e.g., Berlin Central Station, Platform 7"
-           :location-description "Where does the appointment take place? (optional)"
 
            :preview "Preview"
            :send "Send"

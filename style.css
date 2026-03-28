@@ -1,7 +1,7 @@
 :root {
-     --wallet-green: #5ea66c;
-     --wallet-orange: #d46e20;
-     --wallet-orange-dark: #b95f1c;
+    --wallet-green: #2f7d5b;
+    --wallet-orange: #d46e20;
+    --wallet-orange-dark: #b95f1c;
 }
 
 /* Make sure to vertically center the text that's beside the icon */
@@ -56,8 +56,8 @@ form > label {
     font-size: 1.5rem;
 }
 
-/* Wallet Card Styles */
-.wallet-card {
+/* Conference Card Styles */
+.conference-card {
     border: 2px solid var(--pico-primary);
     border-radius: 8px;
     padding: 1.5rem;
@@ -66,7 +66,7 @@ form > label {
     margin-top: 1rem;
 }
 
-.wallet-header {
+.conference-header {
     display: flex;
     align-items: center;
     gap: 0.5em;
@@ -75,96 +75,72 @@ form > label {
     padding-bottom: 0.5rem;
 }
 
-.wallet-header h3 {
+.conference-header h3 {
     margin: 0;
     color: var(--pico-primary);
     font-weight: bold;
 }
 
-.wallet-header svg {
+.conference-header svg {
     height: 28px;
     width: 28px;
     color: var(--pico-primary);
 }
 
-.wallet-description {
+.conference-description,
+.conference-audience,
+.conference-datetime,
+.conference-duration,
+.conference-server,
+.conference-room,
+.conference-url,
+.conference-agenda-link,
+.conference-file {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.5em;
     margin: 0.75rem 0;
+}
+
+.conference-description {
+    align-items: flex-start;
     line-height: 1.5;
     color: var(--pico-text-color);
 }
 
-.wallet-description svg {
+.conference-description svg,
+.conference-audience svg,
+.conference-datetime svg,
+.conference-duration svg,
+.conference-server svg,
+.conference-room svg,
+.conference-url svg,
+.conference-agenda-link svg,
+.conference-file svg {
     height: 18px;
     width: 18px;
     flex-shrink: 0;
+}
+
+.conference-description svg {
     margin-top: 0.25rem;
 }
 
-.wallet-url {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    margin: 0.75rem 0;
-}
-
-.wallet-url svg {
-    height: 18px;
-    width: 18px;
-    flex-shrink: 0;
-}
-
-.wallet-url a {
+.conference-url a,
+.conference-agenda-link a {
     word-break: break-all;
 }
 
-.wallet-qrcode {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    margin: 0.75rem 0;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.wallet-qrcode svg {
-    height: 18px;
-    width: 18px;
-}
-
-.wallet-qrcode img {
-    border: 1px solid var(--pico-primary);
-    border-radius: 4px;
-}
-
-.wallet-datetime {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    margin: 0.75rem 0;
+.conference-datetime,
+.conference-duration,
+.conference-server,
+.conference-room {
     color: var(--pico-primary);
     font-weight: 500;
 }
 
-.wallet-datetime svg {
-    height: 18px;
-    width: 18px;
-}
-
-.wallet-location {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    margin: 0.75rem 0;
+.conference-file {
     color: var(--pico-muted-color);
-}
-
-.wallet-location svg {
-    height: 18px;
-    width: 18px;
-    flex-shrink: 0;
 }
 
 textarea {
@@ -229,5 +205,9 @@ textarea {
 .auto-reset-label input[type="checkbox"] {
     width: auto;
     margin: 0;
+}
+
+select#server {
+    margin-bottom: 0.25rem;
 }
 
