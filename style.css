@@ -1,7 +1,7 @@
 :root {
     --wallet-green: #2f7d5b;
-    --wallet-orange: #d46e20;
-    --wallet-orange-dark: #b95f1c;
+    --wallet-orange: #26a269;
+    --wallet-orange-dark: #1d7f51;
 }
 
 /* Make sure to vertically center the text that's beside the icon */
@@ -170,6 +170,13 @@ textarea {
     border-color: var(--wallet-orange-dark);
 }
 
+.button-group .primary:focus-visible,
+.button-group .primary:active {
+    background-color: var(--wallet-orange-dark);
+    border-color: var(--wallet-orange-dark);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--wallet-orange) 35%, white);
+}
+
 .button-group .outline {
     color: var(--wallet-orange);
     border-color: var(--wallet-orange);
@@ -180,6 +187,14 @@ textarea {
     color: #fff;
     background-color: var(--wallet-orange);
     border-color: var(--wallet-orange);
+}
+
+.button-group .outline:focus-visible,
+.button-group .outline:active {
+    color: #fff;
+    background-color: var(--wallet-orange);
+    border-color: var(--wallet-orange);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--wallet-orange) 35%, white);
 }
 
 .send-feedback {

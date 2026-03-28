@@ -17,6 +17,7 @@
 (local app {})
 ;; auto-reset preference is persisted in localStorage
 (local state {:invite-file nil :send-feedback nil
+              :server-id nil
               :auto-reset (= (js.global.localStorage:getItem :auto-reset) :true)})
 
 (local server-options
@@ -31,6 +32,7 @@
    {:id "custom" :label "custom" :template ""}])
 
 (local default-server-id (. (. server-options 1) :id))
+(set state.server-id default-server-id)
 
 ;; Some handlers receive the element, others an event; normalize both cases.
 (fn get-input-target [el-or-event]
@@ -54,10 +56,7 @@
   (= (trim-string (input-value id)) ""))
 
 (fn selected-server-id []
-  (let [val (trim-string (input-value :server))]
-    (if (= val "")
-        default-server-id
-        val)))
+  (or state.server-id default-server-id))
 
 (fn find-server-option [server-id]
   (var found nil)
@@ -84,8 +83,12 @@
               entry.label
               (. (. server-options 1) :label))))))
 
+(fn normalize-room-name [room]
+  (let [trimmed (trim-string room)]
+    (string.gsub trimmed "%s+" "_")))
+
 (fn meeting-link []
-  (let [room      (trim-string (input-value :room))
+  (let [room      (normalize-room-name (input-value :room))
         template  (trim-string (selected-server-template))
         room-safe (js.global.encodeURIComponent room)]
     (if (or (= room "") (= template ""))
@@ -134,6 +137,7 @@
   (each [_ v (ipairs [:title :description :audience :datetime :duration :agenda-link :room :custom-server])]
     (if (not (is-empty? v))
         (set (. RV.id v :value) "")))
+  (set state.server-id default-server-id)
   (set (. RV.id :server :value) default-server-id)
   (if (. RV.id :meeting-file)
       (set (. RV.id :meeting-file :value) ""))
@@ -197,7 +201,7 @@
         datetime      (if (value-empty? :datetime) "" (format-datetime (input-value :datetime)))
         duration      (trim-string (input-value :duration))
         agenda-link   (trim-string (input-value :agenda-link))
-        room          (trim-string (input-value :room))
+        room          (normalize-room-name (input-value :room))
         server-value  (selected-server-template)
         join-link     (meeting-link)
         meeting-text  (.. "🎥 " title
@@ -290,7 +294,10 @@
       [:div {}
        [:select {:id "server"
            :rvid "server"
-           :onchange (fn [el] (app.render))}
+           :onchange (fn [el]
+                       (let [target (get-input-target el)]
+                         (set state.server-id target.value)
+                         (app.render)))}
         (table.unpack
           (icollect [_ opt (ipairs server-options)]
             [:option {:value opt.id
@@ -305,12 +312,22 @@
         [:div {}
          [:label {:for "custom-server"}
         [:div {:class "label-icon"} icons.server [:strong {} (i18n.text :custom-server-field)]]]
-         (input-template :custom-server :custom-server-placeholder :custom-server-description)])
+         (input-template :custom-server :custom-server-placeholder :custom-server-description)]
+        false)
 
       ;; Room name
       [:label {:for "room"}
        [:div {:class "label-icon"} icons.room [:strong {} (i18n.text :room-field)]]]
-      (input-template :room :room-placeholder :room-description)
+      [:div {}
+       [:input {:id "room"
+                :rvid "room"
+                :type "text"
+                :placeholder (i18n.text :room-placeholder)
+                :oninput (fn [el]
+                           (let [target (get-input-target el)]
+                             (set target.value (normalize-room-name target.value))
+                             (app.render)))}]
+       [:small {} (i18n.text :room-description)]]
       
       ;; Preview
       (if (form-has-content?)
