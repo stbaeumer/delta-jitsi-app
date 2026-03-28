@@ -61,16 +61,24 @@
         (. RV.id id)
         (document:getElementById key))))
 
+(fn js-emptyish? [v]
+  (or (= v nil)
+      (= v js.null)
+      (= v js.global.undefined)))
+
 (fn input-value [id]
   (let [field (get-field id)]
     (if field
-      (or field.value "")
+      (let [v (. field :value)]
+        (if (js-emptyish? v)
+            ""
+            (tostring v)))
       "")))
 
 (fn set-input-value [id value]
   (let [field (get-field id)]
     (when field
-      (set field.value value))))
+      (set (. field :value) value))))
 
 (fn value-empty? [id]
   (= (trim-string (input-value id)) ""))
@@ -358,7 +366,7 @@
            :rvid "server"
            :onchange (fn [el]
                        (let [target (get-input-target el)
-                             server-val (trim-string target.value)]
+                             server-val (trim-string (. target :value))]
                          (set state.server-id (if (= server-val "") default-server-id server-val))
                          ;; When switching back from custom to predefined server,
                          ;; clear stale custom URL to avoid preview confusion.
@@ -401,7 +409,7 @@
                 :placeholder (i18n.text :room-placeholder)
                 :oninput (fn [el]
                            (let [target (get-input-target el)]
-                             (set target.value (normalize-room-name target.value))
+                             (set (. target :value) (normalize-room-name (. target :value)))
                              (app.render)))}]
        [:small {} (i18n.text :room-description)]]
       
