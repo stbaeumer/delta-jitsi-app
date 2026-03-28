@@ -65,7 +65,7 @@
   (let [field (get-field id)]
     (if field
       (or field.value "")
-      ""))
+      "")))
 
 (fn set-input-value [id value]
   (let [field (get-field id)]
